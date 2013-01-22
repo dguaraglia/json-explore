@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+        <title>JSONEitor: easy JSONPath</title>
+        <!--Scripts-->
+        <script src="js/jquery-1.9.0.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/jquery-ui-1.10.0.custom.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/jsonpath.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/json2.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/jquery.snippet.min.js" type="text/javascript" charset="utf-8"></script>
+
+        <!--Stylesheets-->
+        <link rel="stylesheet" href="css/jquery.snippet.min.css" type="text/css" media="screen" title="no title" charset="utf-8">
+        <link rel="stylesheet" href="css/smoothness/jquery-ui-1.10.0.custom.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+        <style type="text/css" media="screen">
+            #inputs {
+              width: 80%;
+              margin: auto;
+              border: 1px solid #c0c0c0;
+            }
+
+            #inputs #expression {
+              margin: 12px;
+              font-size: 12pt;
+              width: 70%;
+            }
+
+            textarea#json {
+              margin: 12px;
+              font-size: 12pt;
+              clear: left;
+              display: block;
+              width: 90%;
+            }
+            div#output {
+                width: 80%;
+                margin: auto;
+                border: 1px solid #c0c0c0;
+            }
+            pre.result {
+                height: 20em;
+            }
+        </style>
+    </head>
+    <body id="jsoneitor">
+        <div id="inputs">
+            <textarea name="json" id="json" rows="20"></textarea>
+            <input type="text" name="expression" value="$.objects.*" id="expression"/>
+            <button id="run">Run</button>
+        </div>
+
+        <!--Output tabs-->
+        <div id="output">
+            <ul>
+                <li><a href="#tab-values">Matched values</a></li>
+                <li><a href="#tab-paths">Matched paths</a></li>
+                <li><a href="#tab-beautified">Beautified</a></li>
+            </ul>
+            <div id="tab-values">
+                <pre class="result" id="values"></pre>
+            </div>
+            <div id="tab-paths">
+                <pre class="result" id="paths"></pre>
+            </div>
+            <div id="tab-beautified">
+                <pre class="result" id="beautified"></pre>
+            </div>
+        </div>
+
+        <script type="text/javascript" charset="utf-8">
+            function runExpression(expression, runOn) {
+                var mode = $("#runMode").val();
+                var obj = $.parseJSON(runOn);
+
+                var values = jsonPath(obj, expression, { 'resultType': 'VALUE'});
+                var paths = jsonPath(obj, expression, { 'resultType': 'PATH'});
+
+                // Output to the console
+                console.log(values);
+                console.log(paths);
+
+                // Print values out
+                var $values = $('#tab-values>.result');
+                var $paths = $('#tab-paths>.result');
+                $values.text(beautifyJSON(values));
+                $values.snippet("javascript");
+                $paths.text(beautifyJSON(paths));
+            }
+
+            function beautifyJSON(obj) {
+                // Use some defaults to beautify the results
+                return JSON.stringify(obj, null, 4);
+            }
+
+            function loadInputs() {
+                // Loads old values for the input fields if in storage
+                if (typeof(Storage)!=="undefined") {
+                    console.log("Yay! localStorage is enabled");
+                    if (localStorage.jsonText) {
+                        $("#json").val(localStorage.jsonText);
+                    }
+                    if (localStorage.expression) {
+                        $("#expression").val(localStorage.expression);
+                    }
+                }
+                else {
+                    console.log("Boo! No localStorage");
+                }
+            }
+
+            function saveInputs() {
+                // Saves inputs to localStorage
+                if (typeof(Storage)!=="undefined") {
+                    localStorage.jsonText = $("#json").val();
+                    localStorage.expression = $("#expression").val();
+                }
+            }
+
+
+            // Page initialization
+            $(document).ready(function() {
+                // Setup tabs
+                $("#output").tabs();
+                loadInputs();
+
+                // Set up event handlers
+                $('#run').click(function() {
+                    var exp = $('#expression').val();
+                    if (!exp.length) {
+                        alert('Please input an expression');
+                    } else {
+                        var text = $("#json").val();
+                        runExpression(exp, text);
+                    }
+
+                    saveInputs();
+                });
+
+                $("#beautify").click(function(){
+                    var $json = $("#json")
+
+                    // Pretty-print the code
+                    var obj = JSON.parse($json.val());
+
+                    // Apply syntax highlighting
+                    var $result = $("#result");
+                    $result.text(beautifyJSON(obj));
+                    $result.snippet("javascript");
+                });
+            });
+        </script>
+    </body>
+</html>
+
